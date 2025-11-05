@@ -1,0 +1,51 @@
+body {
+  font-family: Arial;
+  background: #eef2f7;
+}
+.box {
+  width: 600px;
+  background: white;
+  padding: 20px;
+  margin: 30px auto;
+  border-radius: 10px;
+}
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+form {
+  display: flex;
+  gap: 10px;
+}
+input,
+button {
+  padding: 8px;
+  border-radius: 5px;
+}
+button {
+  background: #007bff;
+  border: none;
+  color: white;
+}
+button:hover {
+  background: #0056b3;
+}
+td,
+th {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+table {
+  width: 100%;
+  margin-top: 15px;
+}
+.deleteBtn {
+  background: red;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+}
+.card {
+  border-radius: 12px;
+}

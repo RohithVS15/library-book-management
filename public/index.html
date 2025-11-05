@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Library Book Management</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="bg-light">
+    <div class="container py-5">
+      <h2 class="text-center mb-4 fw-bold">
+        📚 Library Book Management System
+      </h2>
+
+      <!-- Add Book Form -->
+      <div class="card p-4 shadow-sm">
+        <h4 class="mb-3 fw-semibold">Add Book</h4>
+
+        <form id="bookForm">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <input
+                type="text"
+                id="title"
+                class="form-control"
+                placeholder="Book Title"
+                required
+              />
+            </div>
+            <div class="col-md-4 mb-3">
+              <input
+                type="text"
+                id="author"
+                class="form-control"
+                placeholder="Author Name"
+                required
+              />
+            </div>
+            <div class="col-md-4 mb-3">
+              <input
+                type="number"
+                id="year"
+                class="form-control"
+                placeholder="Published Year"
+              />
+            </div>
+          </div>
+
+          <button class="btn btn-primary w-100" type="submit">Add Book</button>
+        </form>
+      </div>
+
+      <!-- Book List Table -->
+      <div class="card p-4 shadow-sm mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="fw-semibold mb-0">📖 Book List</h4>
+          <input
+            type="text"
+            id="searchBar"
+            class="form-control w-50"
+            placeholder="Search books by title, author or year..."
+          />
+        </div>
+
+        <table class="table table-striped text-center">
+          <thead class="table-dark">
+            <tr>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Year</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="bookList"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ✅ Edit Book Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Edit Book</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+
+          <div class="modal-body">
+            <form id="editBookForm">
+              <input type="hidden" id="editId" />
+
+              <div class="mb-3">
+                <input
+                  type="text"
+                  id="editTitle"
+                  class="form-control"
+                  placeholder="Book Title"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <input
+                  type="text"
+                  id="editAuthor"
+                  class="form-control"
+                  placeholder="Author Name"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <input
+                  type="number"
+                  id="editYear"
+                  class="form-control"
+                  placeholder="Published Year"
+                />
+              </div>
+
+              <button type="submit" class="btn btn-success w-100">
+                Update Book
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ Correct Script Order -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
