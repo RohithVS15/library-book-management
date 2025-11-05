@@ -1,4 +1,4 @@
-const API_URL = "https://library-book-management-o892.onrender.com//api";
+const API_URL = "https://library-book-management-o892.onrender.com/api";
 const bookList = document.getElementById("bookList");
 const searchBar = document.getElementById("searchBar");
 const bookForm = document.getElementById("bookForm");
