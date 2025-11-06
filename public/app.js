@@ -1,125 +1,179 @@
-const API_URL = "https://library-book-management-o892.onrender.com/api";
-const bookList = document.getElementById("bookList");
-const searchBar = document.getElementById("searchBar");
-const bookForm = document.getElementById("bookForm");
+// 🚀 Library System Frontend - Single Page App
 
-// Modal for Edit
-const editModal = new bootstrap.Modal(document.getElementById("editModal"));
+const apiUrl = "https://library-book-management-o892.onrender.com/api"; // 🔥 Replace after deployment
+// If running locally, use ↓
+// const apiUrl = "http://localhost:4000/api";
 
-// Load All Books
-async function loadBooks() {
-  const res = await fetch(`${API_URL}/books`);
+// ✅ UI Elements
+const loginPage = document.getElementById("login-page");
+const registerPage = document.getElementById("register-page");
+const dashboardPage = document.getElementById("dashboard");
+const userNameDisplay = document.getElementById("user-name");
+const logoutBtn = document.getElementById("logout-btn");
+
+// Forms
+const loginForm = document.getElementById("login-form");
+const registerForm = document.getElementById("register-form");
+
+// Book elements
+const bookForm = document.getElementById("book-form");
+const bookList = document.getElementById("book-list");
+const searchInput = document.getElementById("search");
+
+// ✅ Toast Utility
+function showToast(msg) {
+  alert(msg);
+}
+
+// ✅ Switch UI Screens
+function showLogin() {
+  loginPage.style.display = "block";
+  registerPage.style.display = "none";
+  dashboardPage.style.display = "none";
+}
+
+function showRegister() {
+  loginPage.style.display = "none";
+  registerPage.style.display = "block";
+  dashboardPage.style.display = "none";
+}
+
+function showDashboard() {
+  loginPage.style.display = "none";
+  registerPage.style.display = "none";
+  dashboardPage.style.display = "block";
+}
+
+// ✅ Save Token & Username
+function saveUser(token, name) {
+  localStorage.setItem("token", token);
+  localStorage.setItem("name", name);
+}
+
+// ✅ Load User on refresh
+function checkLogin() {
+  const token = localStorage.getItem("token");
+  const name = localStorage.getItem("name");
+  if (!token) return showLogin();
+  userNameDisplay.innerText = name;
+  showDashboard();
+  fetchBooks();
+}
+
+checkLogin();
+
+// ✅ REGISTER USER
+registerForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("reg-name").value;
+  const email = document.getElementById("reg-email").value;
+  const password = document.getElementById("reg-password").value;
+
+  const res = await fetch(`${apiUrl}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, password }),
+  });
+
+  const data = await res.json();
+  showToast(data.message);
+  showLogin();
+});
+
+// ✅ LOGIN USER
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("login-email").value;
+  const password = document.getElementById("login-password").value;
+
+  const res = await fetch(`${apiUrl}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const data = await res.json();
+  if (!data.token) return showToast(data.message);
+
+  saveUser(data.token, data.name);
+  userNameDisplay.innerText = data.name;
+  showDashboard();
+  fetchBooks();
+});
+
+// ✅ LOGOUT
+logoutBtn.addEventListener("click", () => {
+  localStorage.clear();
+  showLogin();
+});
+
+// ✅ FETCH BOOKS
+async function fetchBooks() {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${apiUrl}/books`, {
+    headers: { Authorization: token },
+  });
   const books = await res.json();
+
   displayBooks(books);
 }
 
-// Display Books in Table
+// ✅ DISPLAY BOOKS + INLINE ACTIONS
 function displayBooks(books) {
   bookList.innerHTML = "";
 
   books.forEach((book) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${book.title}</td>
-      <td>${book.author}</td>
-      <td>${book.year || "-"}</td>
-      <td>
-        <button class="btn btn-warning btn-sm me-2"
-          onclick="openEditModal('${book._id}', '${book.title}', '${
-      book.author
-    }', '${book.year || ""}')">
-          Edit
-        </button>
-        <button class="btn btn-danger btn-sm"
-          onclick="deleteBook('${book._id}')">
-          Delete
-        </button>
-      </td>
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span><strong>${book.title}</strong> — ${book.author} (${book.year})</span>
+      <button onclick="deleteBook('${book._id}')">❌</button>
     `;
-    bookList.appendChild(row);
+    bookList.appendChild(li);
   });
 }
 
-// Add Book
+// ✅ ADD BOOK
 bookForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+  const title = document.getElementById("title").value;
+  const author = document.getElementById("author").value;
+  const year = document.getElementById("year").value;
+  const token = localStorage.getItem("token");
 
-  const book = {
-    title: document.getElementById("title").value,
-    author: document.getElementById("author").value,
-    year: document.getElementById("year").value,
-  };
-
-  await fetch(`${API_URL}/books`, {
+  const res = await fetch(`${apiUrl}/books`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(book),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token,
+    },
+    body: JSON.stringify({ title, author, year }),
   });
 
+  const data = await res.json();
+  showToast("✅ Book Added");
+  fetchBooks();
   bookForm.reset();
-  loadBooks();
 });
 
-// Delete Book
+// ✅ DELETE BOOK
 async function deleteBook(id) {
-  await fetch(`${API_URL}/books/${id}`, { method: "DELETE" });
-  loadBooks();
-}
+  const token = localStorage.getItem("token");
 
-// ✅ Open Edit Modal with data
-function openEditModal(id, title, author, year) {
-  document.getElementById("editId").value = id;
-  document.getElementById("editTitle").value = title;
-  document.getElementById("editAuthor").value = author;
-  document.getElementById("editYear").value = year;
-
-  editModal.show();
-}
-
-// ✅ Update Book
-document
-  .getElementById("editBookForm")
-  .addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const id = document.getElementById("editId").value;
-    const updatedBook = {
-      title: document.getElementById("editTitle").value,
-      author: document.getElementById("editAuthor").value,
-      year: document.getElementById("editYear").value,
-    };
-
-    await fetch(`${API_URL}/books/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedBook),
-    });
-
-    editModal.hide();
-    loadBooks();
+  await fetch(`${apiUrl}/books/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: token },
   });
 
-// ✅ Search Functionality (REAL-TIME CLIENT FILTER)
-document.getElementById("searchBar").addEventListener("input", function () {
-  const searchText = this.value.toLowerCase();
-  const rows = document.querySelectorAll("#bookList tr");
+  showToast("🗑 Book Removed");
+  fetchBooks();
+}
 
-  rows.forEach((row) => {
-    const title = row.children[0].innerText.toLowerCase();
-    const author = row.children[1].innerText.toLowerCase();
-    const year = row.children[2].innerText.toLowerCase();
-
-    if (
-      title.includes(searchText) ||
-      author.includes(searchText) ||
-      year.includes(searchText)
-    ) {
-      row.style.display = "";
-    } else {
-      row.style.display = "none";
-    }
+// ✅ SEARCH LIVE FILTER
+searchInput.addEventListener("input", () => {
+  const filter = searchInput.value.toLowerCase();
+  [...bookList.children].forEach((li) => {
+    li.style.display = li.innerText.toLowerCase().includes(filter)
+      ? "flex"
+      : "none";
   });
 });
-
-// Initial Load
-loadBooks();

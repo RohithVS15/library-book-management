@@ -3,26 +3,97 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Library Book Management</title>
+    <title>Library Book Management System</title>
+
+    <!-- Bootstrap -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+
+    <link rel="stylesheet" href="style.css" />
   </head>
-
   <body class="bg-light">
-    <div class="container py-5">
-      <h2 class="text-center mb-4 fw-bold">
-        📚 Library Book Management System
-      </h2>
+    <!-- ✅ Login Page -->
+    <div id="login-page" class="container auth-container">
+      <h2 class="text-center mb-4 text-primary">User Login</h2>
+      <form id="login-form" class="card p-4 shadow-sm">
+        <input
+          type="email"
+          id="login-email"
+          class="form-control mb-3"
+          placeholder="Enter Email"
+          required
+        />
+        <input
+          type="password"
+          id="login-password"
+          class="form-control mb-3"
+          placeholder="Enter Password"
+          required
+        />
+        <button class="btn btn-primary w-100 mb-3">Login</button>
+        <p class="text-center">
+          Don't have an account?
+          <a href="#" onclick="showRegister()">Register</a>
+        </p>
+      </form>
+    </div>
 
-      <!-- Add Book Form -->
-      <div class="card p-4 shadow-sm">
-        <h4 class="mb-3 fw-semibold">Add Book</h4>
+    <!-- ✅ Register Page -->
+    <div
+      id="register-page"
+      class="container auth-container"
+      style="display: none"
+    >
+      <h2 class="text-center mb-4 text-success">User Register</h2>
+      <form id="register-form" class="card p-4 shadow-sm">
+        <input
+          type="text"
+          id="reg-name"
+          class="form-control mb-3"
+          placeholder="Enter Name"
+          required
+        />
+        <input
+          type="email"
+          id="reg-email"
+          class="form-control mb-3"
+          placeholder="Enter Email"
+          required
+        />
+        <input
+          type="password"
+          id="reg-password"
+          class="form-control mb-3"
+          placeholder="Enter Password"
+          required
+        />
+        <button class="btn btn-success w-100 mb-3">Register</button>
+        <p class="text-center">
+          Already have an account?
+          <a href="#" onclick="showLogin()">Login</a>
+        </p>
+      </form>
+    </div>
 
-        <form id="bookForm">
-          <div class="row">
-            <div class="col-md-4 mb-3">
+    <!-- ✅ Dashboard -->
+    <div id="dashboard" class="container" style="display: none">
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <h3 class="text-primary">📚 Library Dashboard</h3>
+        <div>
+          <span class="me-3 fw-bold">👤 <span id="user-name"></span></span>
+          <button id="logout-btn" class="btn btn-danger btn-sm">Logout</button>
+        </div>
+      </div>
+
+      <!-- ✅ Add Book Form -->
+      <div class="card mt-4 p-4 shadow-sm">
+        <h5 class="text-secondary">Add a Book</h5>
+        <form id="book-form" class="mt-3">
+          <div class="row g-3">
+            <div class="col-md-4">
               <input
                 type="text"
                 id="title"
@@ -31,7 +102,7 @@
                 required
               />
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-4">
               <input
                 type="text"
                 id="author"
@@ -40,103 +111,33 @@
                 required
               />
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-2">
               <input
                 type="number"
                 id="year"
                 class="form-control"
-                placeholder="Published Year"
+                placeholder="Year"
               />
             </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary w-100">Add</button>
+            </div>
           </div>
-
-          <button class="btn btn-primary w-100" type="submit">Add Book</button>
         </form>
       </div>
 
-      <!-- Book List Table -->
-      <div class="card p-4 shadow-sm mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4 class="fw-semibold mb-0">📖 Book List</h4>
-          <input
-            type="text"
-            id="searchBar"
-            class="form-control w-50"
-            placeholder="Search books by title, author or year..."
-          />
-        </div>
+      <!-- ✅ Search -->
+      <input
+        id="search"
+        type="text"
+        class="form-control mt-4"
+        placeholder="Search books..."
+      />
 
-        <table class="table table-striped text-center">
-          <thead class="table-dark">
-            <tr>
-              <th>Title</th>
-              <th>Author</th>
-              <th>Year</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="bookList"></tbody>
-        </table>
-      </div>
+      <!-- ✅ Book List -->
+      <ul id="book-list" class="list-group mt-3 shadow-sm"></ul>
     </div>
 
-    <!-- ✅ Edit Book Modal -->
-    <div class="modal fade" id="editModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Edit Book</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-            ></button>
-          </div>
-
-          <div class="modal-body">
-            <form id="editBookForm">
-              <input type="hidden" id="editId" />
-
-              <div class="mb-3">
-                <input
-                  type="text"
-                  id="editTitle"
-                  class="form-control"
-                  placeholder="Book Title"
-                  required
-                />
-              </div>
-
-              <div class="mb-3">
-                <input
-                  type="text"
-                  id="editAuthor"
-                  class="form-control"
-                  placeholder="Author Name"
-                  required
-                />
-              </div>
-
-              <div class="mb-3">
-                <input
-                  type="number"
-                  id="editYear"
-                  class="form-control"
-                  placeholder="Published Year"
-                />
-              </div>
-
-              <button type="submit" class="btn btn-success w-100">
-                Update Book
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ✅ Correct Script Order -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
