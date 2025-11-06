@@ -1,8 +1,7 @@
 // 🚀 Library System Frontend - Single Page App
 
-const apiUrl = "https://library-book-management-o892.onrender.com/api"; // 🔥 Replace after deployment
-// If running locally, use ↓
-// const apiUrl = "http://localhost:4000/api";
+const apiUrl = "https://library-book-management-o892.onrender.com/api";
+// const apiUrl = "http://localhost:5000/api"; // 👉 If testing locally
 
 // ✅ UI Elements
 const loginPage = document.getElementById("login-page");
@@ -20,12 +19,12 @@ const bookForm = document.getElementById("book-form");
 const bookList = document.getElementById("book-list");
 const searchInput = document.getElementById("search");
 
-// ✅ Toast Utility
+// ✅ Toast Messages
 function showToast(msg) {
   alert(msg);
 }
 
-// ✅ Switch UI Screens
+// ✅ Screen Navigation
 function showLogin() {
   loginPage.style.display = "block";
   registerPage.style.display = "none";
@@ -44,25 +43,25 @@ function showDashboard() {
   dashboardPage.style.display = "block";
 }
 
-// ✅ Save Token & Username
+// ✅ Save credentials in LocalStorage
 function saveUser(token, name) {
   localStorage.setItem("token", token);
   localStorage.setItem("name", name);
 }
 
-// ✅ Load User on refresh
+// ✅ Auto login if token is available
 function checkLogin() {
   const token = localStorage.getItem("token");
   const name = localStorage.getItem("name");
   if (!token) return showLogin();
+
   userNameDisplay.innerText = name;
   showDashboard();
   fetchBooks();
 }
-
 checkLogin();
 
-// ✅ REGISTER USER
+// ✅ REGISTER ✅
 registerForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const name = document.getElementById("reg-name").value;
@@ -80,7 +79,7 @@ registerForm.addEventListener("submit", async (e) => {
   showLogin();
 });
 
-// ✅ LOGIN USER
+// ✅ LOGIN ✅
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("login-email").value;
@@ -101,38 +100,40 @@ loginForm.addEventListener("submit", async (e) => {
   fetchBooks();
 });
 
-// ✅ LOGOUT
+// ✅ LOGOUT ✅
 logoutBtn.addEventListener("click", () => {
   localStorage.clear();
   showLogin();
 });
 
-// ✅ FETCH BOOKS
+// ✅ Fetch Books ✅
 async function fetchBooks() {
   const token = localStorage.getItem("token");
-  const res = await fetch(`${apiUrl}/books`, {
-    headers: { Authorization: token },
-  });
-  const books = await res.json();
 
+  const res = await fetch(`${apiUrl}/books`, {
+    headers: { Authorization: "Bearer " + token },
+  });
+
+  const books = await res.json();
   displayBooks(books);
 }
 
-// ✅ DISPLAY BOOKS + INLINE ACTIONS
+// ✅ Display Books ✅
 function displayBooks(books) {
   bookList.innerHTML = "";
-
   books.forEach((book) => {
     const li = document.createElement("li");
     li.innerHTML = `
-      <span><strong>${book.title}</strong> — ${book.author} (${book.year})</span>
+      <span><strong>${book.title}</strong> — ${book.author} (${
+      book.year || "N/A"
+    })</span>
       <button onclick="deleteBook('${book._id}')">❌</button>
     `;
     bookList.appendChild(li);
   });
 }
 
-// ✅ ADD BOOK
+// ✅ Add Book ✅
 bookForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const title = document.getElementById("title").value;
@@ -140,35 +141,34 @@ bookForm.addEventListener("submit", async (e) => {
   const year = document.getElementById("year").value;
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${apiUrl}/books`, {
+  await fetch(`${apiUrl}/books`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: token,
+      Authorization: "Bearer " + token,
     },
     body: JSON.stringify({ title, author, year }),
   });
 
-  const data = await res.json();
   showToast("✅ Book Added");
   fetchBooks();
   bookForm.reset();
 });
 
-// ✅ DELETE BOOK
+// ✅ Delete Book ✅
 async function deleteBook(id) {
   const token = localStorage.getItem("token");
 
   await fetch(`${apiUrl}/books/${id}`, {
     method: "DELETE",
-    headers: { Authorization: token },
+    headers: { Authorization: "Bearer " + token },
   });
 
-  showToast("🗑 Book Removed");
+  showToast("🗑️ Book Deleted");
   fetchBooks();
 }
 
-// ✅ SEARCH LIVE FILTER
+// ✅ Search Filter ✅
 searchInput.addEventListener("input", () => {
   const filter = searchInput.value.toLowerCase();
   [...bookList.children].forEach((li) => {
