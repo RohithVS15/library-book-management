@@ -8,7 +8,7 @@ const path = require("path");
 const app = express();
 app.use(express.json());
 
-// ✅ Allow all origins for now (Render + Localhost)
+// ✅ Allow frontend access
 app.use(
   cors({
     origin: "*",
@@ -17,18 +17,13 @@ app.use(
   })
 );
 
-// ✅ Serve Frontend
-app.use(express.static(path.join(__dirname, "public")));
-
-// ✅ MongoDB Atlas Connection
+// ✅ Connect MongoDB
 mongoose
-  .connect(
-    "mongodb+srv://vsr:vsr@cluster0.cnhnbiw.mongodb.net/libraryDB?retryWrites=true&w=majority"
-  )
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .connect("mongodb+srv://vsr:vsr@cluster0.cnhnbiw.mongodb.net/libraryDB")
+  .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.log("❌ MongoDB Error:", err));
 
-// ✅ Book Schema Updated
+// ✅ Book Schema
 const bookSchema = new mongoose.Schema({
   title: String,
   author: String,
@@ -43,84 +38,71 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String,
 });
-
 const User = mongoose.model("User", userSchema);
 
 // ✅ JWT Secret
 const JWT_SECRET = "library_secret_key";
 
-// ✅ Register User
+// ✅ Register API
 app.post("/api/auth/register", async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
+  const { name, email, password } = req.body;
+  const exists = await User.findOne({ email });
+  if (exists) return res.status(400).json({ message: "Email already exists" });
 
-    const exists = await User.findOne({ email });
-    if (exists)
-      return res.status(400).json({ message: "Email already exists ❌" });
-
-    const hashed = await bcrypt.hash(password, 10);
-    await User.create({ name, email, password: hashed });
-
-    res.json({ message: "✅ Registered Successfully" });
-  } catch {
-    res.status(500).json({ message: "Server Error ❌" });
-  }
+  const hashed = await bcrypt.hash(password, 10);
+  await User.create({ name, email, password: hashed });
+  res.json({ message: "User registered ✅" });
 });
 
-// ✅ Login User
+// ✅ Login API
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email });
 
-  if (!user) return res.status(400).json({ message: "Invalid Credentials ❌" });
+  const user = await User.findOne({ email });
+  if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
   const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.status(400).json({ message: "Wrong Password ❌" });
+  if (!match) return res.status(400).json({ message: "Invalid credentials" });
 
   const token = jwt.sign({ id: user._id, name: user.name }, JWT_SECRET);
-
-  res.json({ message: "✅ Login Successful", token, name: user.name });
+  res.json({ message: "Login OK ✅", token, name: user.name });
 });
 
-// ✅ Check Auth
-function checkAuth(req, res, next) {
-  let token = req.headers.authorization;
-  if (!token) return res.status(401).json({ message: "Unauthorized ❌" });
+// ✅ Token Middleware
+function auth(req, res, next) {
+  const token = req.headers.authorization;
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-  token = token.split(" ")[1]; // Remove Bearer
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ message: "Invalid Token ❌" });
+    if (err) return res.status(403).json({ message: "Invalid Token" });
     req.user = decoded;
     next();
   });
 }
 
-// ✅ CRUD APIs
-app.post("/api/books", checkAuth, async (req, res) => {
-  const book = await Book.create(req.body);
-  res.json(book);
+// ✅ CRUD Books
+app.post("/api/books", auth, async (req, res) => {
+  const { title, author, year } = req.body;
+  await Book.create({ title, author, year });
+  res.json({ message: "Book added ✅" });
 });
 
-app.get("/api/books", checkAuth, async (req, res) => {
-  const books = await Book.find().sort({ _id: -1 });
+app.get("/api/books", auth, async (req, res) => {
+  const books = await Book.find();
   res.json(books);
 });
 
-app.put("/api/books/:id", checkAuth, async (req, res) => {
-  const book = await Book.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-  });
-  res.json(book);
-});
-
-app.delete("/api/books/:id", checkAuth, async (req, res) => {
+app.delete("/api/books/:id", auth, async (req, res) => {
   await Book.findByIdAndDelete(req.params.id);
-  res.json({ message: "🗑️ Book Deleted" });
+  res.json({ message: "Book deleted ✅" });
 });
 
-// ✅ Handle Render Deployment Routing
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+// ✅ Serve Frontend Files
+app.use(express.static(__dirname));
+
+// ✅ Fallback to index.html for all routes
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // ✅ Start Server
