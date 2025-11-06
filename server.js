@@ -1,23 +1,33 @@
-import express from "express";
-import mongoose from "mongoose";
-import cors from "cors";
-import dotenv from "dotenv";
-import authRoutes from "./src/routes/authRoutes.js";
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const path = require("path");
+require("dotenv").config();
 
-dotenv.config();
 const app = express();
+const PORT = process.env.PORT || 10000;
 
 app.use(cors());
 app.use(express.json());
-
-app.use("/api/auth", authRoutes);
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "public")));
 
 mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("✅ MongoDB Connected!");
-    app.listen(process.env.PORT, () =>
-      console.log(`🚀 Server running at http://localhost:${process.env.PORT}`)
-    );
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
   })
-  .catch((err) => console.error("❌ DB Error:", err));
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.log("❌ MongoDB Error:", err));
+
+app.use("/api/auth", require("./auth.js"));
+app.use("/api/books", require("./books.js"));
+
+// ✅ Express 5 fallback route
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.listen(PORT, () => {
+  console.log(`✅ Server Running on port ${PORT}`);
+});

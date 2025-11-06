@@ -1,42 +1,30 @@
 body {
-  background-color: #f5f7fa;
-  font-family: Arial, sans-serif;
+  font-family: Arial;
+  text-align: center;
+  background: #dfe6e9;
 }
 
-.auth-container {
-  max-width: 420px;
-  margin-top: 80px;
+input {
+  display: block;
+  margin: 10px auto;
+  padding: 8px;
 }
 
-.card {
-  border-radius: 10px;
-  border: none;
-  background: #ffffff;
+button {
+  padding: 8px 16px;
+  margin: 10px;
+  cursor: pointer;
 }
 
-input.form-control {
-  height: 45px;
+ul {
+  list-style: none;
+  padding: 0;
 }
 
-#dashboard {
-  margin-top: 40px;
-}
-
-#book-list .list-group-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-}
-
-#logout-btn {
-  font-size: 14px;
-}
-
-#search {
-  max-width: 400px;
-}
-
-.btn {
-  font-weight: 600;
+li {
+  background: #fff;
+  padding: 10px;
+  margin: 5px auto;
+  width: 60%;
+  border-radius: 5px;
 }

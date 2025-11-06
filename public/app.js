@@ -1,146 +1,80 @@
-const apiUrl = "/api";
-
-// UI Elements
-const loginPage = document.getElementById("login-page");
-const registerPage = document.getElementById("register-page");
-const dashboardPage = document.getElementById("dashboard");
-const userNameDisplay = document.getElementById("user-name");
-const logoutBtn = document.getElementById("logout-btn");
-
-const loginForm = document.getElementById("login-form");
-const registerForm = document.getElementById("register-form");
-
-const bookForm = document.getElementById("book-form");
-const bookList = document.getElementById("book-list");
-const searchInput = document.getElementById("search");
-
-function showLogin() {
-  loginPage.style.display = "block";
-  registerPage.style.display = "none";
-  dashboardPage.style.display = "none";
-}
+const API = "https://library-book-management-o892.onrender.com//api";
 
 function showRegister() {
-  loginPage.style.display = "none";
-  registerPage.style.display = "block";
-  dashboardPage.style.display = "none";
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("registerPage").style.display = "block";
 }
 
-function showDashboard() {
-  loginPage.style.display = "none";
-  registerPage.style.display = "none";
-  dashboardPage.style.display = "block";
+function showLogin() {
+  document.getElementById("registerPage").style.display = "none";
+  document.getElementById("loginPage").style.display = "block";
 }
 
-function saveUser(token, name) {
-  localStorage.setItem("token", token);
-  localStorage.setItem("name", name);
-}
+async function register() {
+  const username = regUser.value;
+  const password = regPass.value;
 
-function checkLogin() {
-  const token = localStorage.getItem("token");
-  const name = localStorage.getItem("name");
-  if (!token) return showLogin();
-  userNameDisplay.innerText = name;
-  showDashboard();
-  fetchBooks();
-}
-checkLogin();
-
-// REGISTER
-registerForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const name = document.getElementById("reg-name").value;
-  const email = document.getElementById("reg-email").value;
-  const password = document.getElementById("reg-password").value;
-
-  const res = await fetch(`${apiUrl}/auth/register`, {
+  const res = await fetch(`${API}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ username, password }),
+  });
+
+  alert("Registered! Now Login");
+  showLogin();
+}
+
+async function login() {
+  const username = loginUser.value;
+  const password = loginPass.value;
+
+  const res = await fetch(`${API}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
   });
 
   const data = await res.json();
-  alert(data.message);
-  showLogin();
-});
+  if (data.error) return alert(data.error);
 
-// LOGIN
-loginForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = document.getElementById("login-email").value;
-  const password = document.getElementById("login-password").value;
+  loadBooks();
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("mainPage").style.display = "block";
+}
 
-  const res = await fetch(`${apiUrl}/auth/login`, {
+async function addBook() {
+  const title = document.getElementById("title").value;
+  const author = document.getElementById("author").value;
+  const year = document.getElementById("year").value;
+
+  await fetch(`${API}/books/add`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ title, author, year }),
   });
 
-  const data = await res.json();
-  if (!data.token) return alert(data.message);
+  loadBooks();
+}
 
-  saveUser(data.token, data.name);
-  userNameDisplay.innerText = data.name;
-  showDashboard();
-  fetchBooks();
-});
-
-// LOGOUT
-logoutBtn.addEventListener("click", () => {
-  localStorage.clear();
-  showLogin();
-});
-
-// GET BOOKS
-async function fetchBooks() {
-  const token = localStorage.getItem("token");
-  const res = await fetch(`${apiUrl}/books`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+async function loadBooks() {
+  const res = await fetch(`${API}/books`);
   const books = await res.json();
-  renderBooks(books);
-}
 
-function renderBooks(books) {
   bookList.innerHTML = "";
-  books.forEach((b) => {
+  books.forEach((book) => {
     const li = document.createElement("li");
-    li.innerHTML = `
-      <span><strong>${b.title}</strong> — ${b.author} (${b.year})</span>
-      <button onclick="deleteBook('${b._id}')">❌</button>
-    `;
+    li.innerHTML = `${book.title} - ${book.author} (${book.year}) 
+    <button onclick="deleteBook('${book._id}')">X</button>`;
     bookList.appendChild(li);
   });
 }
 
-// ADD BOOK
-bookForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const title = document.getElementById("title").value;
-  const author = document.getElementById("author").value;
-  const year = document.getElementById("year").value;
-  const token = localStorage.getItem("token");
-
-  await fetch(`${apiUrl}/books`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ title, author, year }),
-  });
-
-  fetchBooks();
-  bookForm.reset();
-});
-
-// DELETE BOOK
 async function deleteBook(id) {
-  const token = localStorage.getItem("token");
-  await fetch(`${apiUrl}/books/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  fetchBooks();
+  await fetch(`${API}/books/${id}`, { method: "DELETE" });
+  loadBooks();
+}
+
+function logout() {
+  document.getElementById("mainPage").style.display = "none";
+  showLogin();
 }
