@@ -1,151 +1,79 @@
-const apiUrl = "/api";
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import path from "path";
+import dotenv from "dotenv";
+import User from "./models/User.js";
+import Book from "./models/Book.js";
+import jwt from "jsonwebtoken";
 
-// UI Elements
-const loginPage = document.getElementById("login-page");
-const registerPage = document.getElementById("register-page");
-const dashboardPage = document.getElementById("dashboard");
-const userNameDisplay = document.getElementById("user-name");
-const logoutBtn = document.getElementById("logout-btn");
+dotenv.config();
+const app = express();
+app.use(express.json());
+app.use(cors());
 
-// Forms
-const loginForm = document.getElementById("login-form");
-const registerForm = document.getElementById("register-form");
-const bookForm = document.getElementById("book-form");
-const bookList = document.getElementById("book-list");
-const searchInput = document.getElementById("search");
+// Serve frontend
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, "public")));
 
-// Toast
-function showToast(msg) {
-  alert(msg);
-}
+// ✅ MongoDB Connection
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.log("❌ MongoDB Error:", err));
 
-// UI switch
-function showLogin() {
-  loginPage.style.display = "block";
-  registerPage.style.display = "none";
-  dashboardPage.style.display = "none";
-}
+// ✅ Token Middleware
+function verifyToken(req, res, next) {
+  const token = req.headers["authorization"]?.split(" ")[1];
+  if (!token) return res.json({ message: "Unauthorized" });
 
-function showRegister() {
-  loginPage.style.display = "none";
-  registerPage.style.display = "block";
-  dashboardPage.style.display = "none";
-}
-
-function showDashboard() {
-  loginPage.style.display = "none";
-  registerPage.style.display = "none";
-  dashboardPage.style.display = "block";
-}
-
-// Save Token
-function saveUser(token, name) {
-  localStorage.setItem("token", token);
-  localStorage.setItem("name", name);
-}
-
-function checkLogin() {
-  const token = localStorage.getItem("token");
-  const name = localStorage.getItem("name");
-  if (!token) return showLogin();
-  userNameDisplay.innerText = name;
-  showDashboard();
-  fetchBooks();
-}
-checkLogin();
-
-// Register
-registerForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const name = reg - name.value;
-  const email = reg - email.value;
-  const password = reg - password.value;
-
-  const res = await fetch(`${apiUrl}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password }),
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.json({ message: "Invalid Token" });
+    req.user = user;
+    next();
   });
-  const data = await res.json();
-  showToast(data.message);
-  showLogin();
+}
+
+/* ---------------- AUTH API ---------------- */
+
+// REGISTER
+app.post("/api/auth/register", async (req, res) => {
+  const { name, email, password } = req.body;
+  const user = await User.create({ name, email, password });
+  res.json({ message: "✅ Registered Successfully" });
 });
 
-// Login
-loginForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = login - email.value;
-  const password = login - password.value;
+// LOGIN
+app.post("/api/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email, password });
+  if (!user) return res.json({ message: "❌ Invalid Credentials" });
 
-  const res = await fetch(`${apiUrl}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  const data = await res.json();
-  if (!data.token) return showToast(data.message);
-
-  saveUser(data.token, data.name);
-  showDashboard();
-  fetchBooks();
+  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+  res.json({ token, name: user.name });
 });
 
-// Logout
-logoutBtn.addEventListener("click", () => {
-  localStorage.clear();
-  showLogin();
+/* ---------------- BOOK API ---------------- */
+
+app.get("/api/books", verifyToken, async (req, res) => {
+  const books = await Book.find();
+  res.json(books);
 });
 
-// Fetch Books
-async function fetchBooks() {
-  const token = localStorage.getItem("token");
-  const res = await fetch(`${apiUrl}/books`, {
-    headers: { Authorization: token },
-  });
-  const books = await res.json();
-  displayBooks(books);
-}
-
-function displayBooks(books) {
-  bookList.innerHTML = "";
-  books.forEach((book) => {
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <span><strong>${book.title}</strong> - ${book.author} (${book.year})</span>
-      <button onclick="deleteBook('${book._id}')">❌</button>
-    `;
-    bookList.appendChild(li);
-  });
-}
-
-// Add Book
-bookForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const token = localStorage.getItem("token");
-  const title = title.value;
-  const author = author.value;
-  const year = year.value;
-
-  await fetch(`${apiUrl}/books`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: token,
-    },
-    body: JSON.stringify({ title, author, year }),
-  });
-  showToast("✅ Book Added");
-  fetchBooks();
-  bookForm.reset();
+app.post("/api/books", verifyToken, async (req, res) => {
+  const book = await Book.create(req.body);
+  res.json({ message: "📚 Book Added", book });
 });
 
-// Delete Book
-async function deleteBook(id) {
-  const token = localStorage.getItem("token");
-  await fetch(`${apiUrl}/books/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: token },
-  });
-  showToast("🗑 Deleted");
-  fetchBooks();
-}
+app.delete("/api/books/:id", verifyToken, async (req, res) => {
+  await Book.findByIdAndDelete(req.params.id);
+  res.json({ message: "🗑 Book Deleted" });
+});
+
+/* -------- Serve Frontend for All Routes -------- */
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
