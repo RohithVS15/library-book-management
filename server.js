@@ -1,80 +1,151 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const path = require("path");
-const Book = require("./models/Book");
-const User = require("./models/User");
+const apiUrl = "/api";
 
-const app = express();
-app.use(express.json());
-app.use(cors());
+// UI Elements
+const loginPage = document.getElementById("login-page");
+const registerPage = document.getElementById("register-page");
+const dashboardPage = document.getElementById("dashboard");
+const userNameDisplay = document.getElementById("user-name");
+const logoutBtn = document.getElementById("logout-btn");
 
-// ✅ Serve static frontend files
-app.use(express.static(path.join(__dirname, "public")));
+// Forms
+const loginForm = document.getElementById("login-form");
+const registerForm = document.getElementById("register-form");
+const bookForm = document.getElementById("book-form");
+const bookList = document.getElementById("book-list");
+const searchInput = document.getElementById("search");
 
-// ✅ MongoDB connection
-mongoose
-  .connect(
-    "mongodb+srv://yourUsername:yourPassword@cluster0.cnhnbiw.mongodb.net/library",
-    {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    }
-  )
-  .then(() => console.log("✅ MongoDB Connected ✅"))
-  .catch((err) => console.error("❌ MongoDB Error:", err));
+// Toast
+function showToast(msg) {
+  alert(msg);
+}
 
-// ✅ User Registration
-app.post("/api/register", async (req, res) => {
-  const { username, password } = req.body;
+// UI switch
+function showLogin() {
+  loginPage.style.display = "block";
+  registerPage.style.display = "none";
+  dashboardPage.style.display = "none";
+}
 
-  const existingUser = await User.findOne({ username });
-  if (existingUser) return res.json({ message: "User already exists" });
+function showRegister() {
+  loginPage.style.display = "none";
+  registerPage.style.display = "block";
+  dashboardPage.style.display = "none";
+}
 
-  const newUser = new User({ username, password });
-  await newUser.save();
-  res.json({ message: "Registration successful" });
-});
+function showDashboard() {
+  loginPage.style.display = "none";
+  registerPage.style.display = "none";
+  dashboardPage.style.display = "block";
+}
 
-// ✅ User Login
-app.post("/api/login", async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ username, password });
+// Save Token
+function saveUser(token, name) {
+  localStorage.setItem("token", token);
+  localStorage.setItem("name", name);
+}
 
-  if (!user) return res.json({ message: "Invalid credentials" });
+function checkLogin() {
+  const token = localStorage.getItem("token");
+  const name = localStorage.getItem("name");
+  if (!token) return showLogin();
+  userNameDisplay.innerText = name;
+  showDashboard();
+  fetchBooks();
+}
+checkLogin();
 
-  res.json({ message: "Login successful" });
-});
+// Register
+registerForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = reg - name.value;
+  const email = reg - email.value;
+  const password = reg - password.value;
 
-// ✅ CRUD - Books
-app.post("/api/books", async (req, res) => {
-  const { title, author, genre, year } = req.body;
-  const newBook = new Book({ title, author, genre, year });
-  await newBook.save();
-  res.json(newBook);
-});
-
-app.get("/api/books", async (req, res) => {
-  const books = await Book.find();
-  res.json(books);
-});
-
-app.put("/api/books/:id", async (req, res) => {
-  const updated = await Book.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
+  const res = await fetch(`${apiUrl}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, password }),
   });
-  res.json(updated);
+  const data = await res.json();
+  showToast(data.message);
+  showLogin();
 });
 
-app.delete("/api/books/:id", async (req, res) => {
-  await Book.findByIdAndDelete(req.params.id);
-  res.json({ message: "Deleted Successfully" });
+// Login
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = login - email.value;
+  const password = login - password.value;
+
+  const res = await fetch(`${apiUrl}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!data.token) return showToast(data.message);
+
+  saveUser(data.token, data.name);
+  showDashboard();
+  fetchBooks();
 });
 
-// ✅ Default Route → Open index.html
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+// Logout
+logoutBtn.addEventListener("click", () => {
+  localStorage.clear();
+  showLogin();
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+// Fetch Books
+async function fetchBooks() {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${apiUrl}/books`, {
+    headers: { Authorization: token },
+  });
+  const books = await res.json();
+  displayBooks(books);
+}
+
+function displayBooks(books) {
+  bookList.innerHTML = "";
+  books.forEach((book) => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span><strong>${book.title}</strong> - ${book.author} (${book.year})</span>
+      <button onclick="deleteBook('${book._id}')">❌</button>
+    `;
+    bookList.appendChild(li);
+  });
+}
+
+// Add Book
+bookForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem("token");
+  const title = title.value;
+  const author = author.value;
+  const year = year.value;
+
+  await fetch(`${apiUrl}/books`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token,
+    },
+    body: JSON.stringify({ title, author, year }),
+  });
+  showToast("✅ Book Added");
+  fetchBooks();
+  bookForm.reset();
+});
+
+// Delete Book
+async function deleteBook(id) {
+  const token = localStorage.getItem("token");
+  await fetch(`${apiUrl}/books/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: token },
+  });
+  showToast("🗑 Deleted");
+  fetchBooks();
+}
